@@ -1,0 +1,84 @@
+// Creating tables
+Table users {
+  id int [pk, increment] // auto-increment
+  username varchar [not null, unique]
+  password varchar [not null]
+  firstName varchar [not null]
+  surname varchar [not null]
+  email varchar [unique]
+  createdAt timestamp [not null]
+}
+
+Table pictures {
+  id int [pk, increment]
+  ownerId int [not null]
+  title varchar [not null]
+  description varchar [not null]
+  isExternal boolean [not null]
+  URL varchar [not null]
+  visibility boolean [not null]
+  createdAt timestamp [not null]
+}
+
+Table pictureVotes {
+  id int [pk, increment]
+  pictureId int [not null]
+  ownerId int [not null]
+  createdAt timestamp [not null]
+  Indexes {
+    (ownerId, pictureId) [unique]
+  }
+ }
+ 
+ Table pictureComments {
+  id int [pk, increment]
+  pictureId int [not null]
+  ownerId int [not null]
+  comment varchar [not null]
+  createdAt timestamp [not null]
+ }
+ 
+Table usersFollowers {
+  id int [pk, increment]
+  followedUser int [not null]
+  followerId int [not null]
+  createdAt timestamp [not null]
+  Indexes {
+    (followedUser, followerId) [unique]
+  }
+ }
+ 
+ Table pictureTags{
+   id int [pk, increment]
+   pictureId int [not null]
+   tagId int [not null]
+   createdAt timestamp [not null]
+  Indexes {
+    (pictureId, tagId) [unique]
+  }
+ }
+ 
+ Table tags {
+   id int [pk, increment]
+   tag varchar [not null, unique]
+   createdAt timestamp [not null]
+ }
+
+// References
+
+// Pictures can only have one owner
+Ref: users.id < pictures.ownerId  
+Ref: pictureVotes.pictureId > pictures.id  
+Ref: pictureComments.pictureId > pictures.id  
+Ref: users.id < pictureComments.ownerId  
+
+
+// Votes can only have one owner
+Ref: users.id < pictureVotes.ownerId
+
+Ref: usersFollowers.followedUser > users.id
+Ref: usersFollowers.followerId > users.id
+
+Ref: pictureTags.tagId > tags.id
+Ref: pictureTags.pictureId > pictures.id
+
