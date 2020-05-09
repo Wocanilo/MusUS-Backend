@@ -71,6 +71,14 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                     $stmtTags->execute();
                     // Get data from query
                     $pictureTags = $stmtTags->fetchAll(PDO::FETCH_ASSOC);
+
+                    // Get votes
+                    $stmtVotes = $conn->prepare("SELECT count(*) FROM pictureVotes WHERE pictureId = :pictureId");
+                    $stmtVotes->bindParam(":pictureId", $_GET["pictureId"]);
+                    // Execute
+                    $stmtVotes->execute();
+                    // Get data from query
+                    $pictureVotes = $stmtVotes->fetchColumn();
                 }
 
                 // If private picture only show if owner
@@ -83,6 +91,7 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 }else{
                     $response["data"] = $results;
                     $response["data"]["tags"] = $pictureTags;
+                    $response["data"]["votes"] = $pictureVotes;
                 }
                 
                 echo json_encode($response);
@@ -145,7 +154,17 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 $response["status"] = 500;
             }else{
                 $response["status"] = 200;
-    
+
+                foreach($results as &$picture){
+                    // Get votes
+                    $stmtVotes = $conn->prepare("SELECT count(*) FROM pictureVotes WHERE pictureId = :pictureId");
+                    $stmtVotes->bindParam(":pictureId", $picture["id"]);
+                    // Execute
+                    $stmtVotes->execute();
+                    // Get data from query
+                    $picture["votes"] = $stmtVotes->fetchColumn();
+                }
+
             }
             $response["data"] = $results;
             echo json_encode($response);
