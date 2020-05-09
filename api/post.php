@@ -58,6 +58,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
     
                                             if($resultsOwnerShip["ownerId"] == $_SESSION["userId"]){             
                                                 // User is owner
+
                                                 // Update post
                                                 $stmt = $conn->prepare("UPDATE pictures SET title = :title, description = :description, isExternal = :isExternal, URL = :URL, visibility = :visibility WHERE id = :pictureId");
                                 
@@ -87,33 +88,63 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                                 $wantedTags = explode(",", $_POST["tags"]);
 
                                                 // Get current tags
-                                                $stmtCurrentTags = $conn->prepare("SELECT tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
+                                                $stmtCurrentTags = $conn->prepare("SELECT tags.id as id,tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
                                                 $stmtCurrentTags->bindParam(":pictureId", $_POST["pictureId"]);
                                                 // Execute
                                                 $stmtCurrentTags->execute();
                                                 // Get data from query
                                                 $CurrentTags = $stmtCurrentTags->fetchAll(PDO::FETCH_ASSOC);
+
+                                                // Determine tags to add
                                                 
-                                                foreach($CurrentTags as $tmpTag){
-                                                    foreach($wantedTags as &$updateTag){ // Reference to modify it
-                                                        if(strtoupper($tmpTag["tag"]) == strtoupper($updateTag)){
-                                                            $updateTag = "";
+                                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){                                  
+                                                        if(strtoupper($CurrentTags[$CurrentTagindex]["tag"]) == strtoupper($wantedTagValue)){
+                                                            $wantedTags[$wantedTagIndex] = "";
+                                                            $CurrentTags[$CurrentTagindex]["tag"] = "";
                                                         }
                                                     }
                                                 }
-                                                
-                                                foreach($availableTags as $currentTag){
-                                                    foreach($wantedTags as &$wantedTag){ // Reference to modify it
-                                                        if(strtoupper($currentTag["tag"]) == strtoupper($wantedTag)){
+
+                                                // Remove old tags
+                                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                                    if($CurrentTags[$CurrentTagindex]["tag"] !== ""){
+                                                        $stmtTag = $conn->prepare("DELETE FROM pictureTags WHERE pictureId = :pictureId AND tagId = :tagId");
+
+                                                        $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
+                                                        $stmtTag->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+
+                                                        $stmtTag->execute();
+
+                                                        // Delete tag from database if no other post uses it
+                                                        $stmtTags = $conn->prepare("SELECT count(*) FROM pictureTags WHERE tagId = :tagId");
+                                                        $stmtTags->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                                        $stmtTags->execute();
+                            
+                                                        if($stmtTags->fetchColumn() === 0){
+                                                            // Delete tag
+                                                            $stmtTagDelete = $conn->prepare("DELETE FROM tags WHERE id = :tagId");
+                            
+                                                            // Bind params
+                                                            $stmtTagDelete->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                                            $stmtTagDelete->execute();
+                                                        }
+                                                    }
+                                                }
+
+                                                // Add new found tags
+                                                foreach($availableTags as $CurrentAvailableTagIndex => $CurrentAvailableTagValue){
+                                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){
+                                                        if(strtoupper($availableTags[$CurrentAvailableTagIndex]["tag"]) == strtoupper($wantedTagValue)){
                                                             $stmtTag = $conn->prepare("INSERT INTO pictureTags (pictureId, tagId) VALUES (:pictureId, :tagId)");
 
                                                             $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
-                                                            $stmtTag->bindParam(":tagId", $currentTag["id"]);
+                                                            $stmtTag->bindParam(":tagId", $availableTags[$CurrentAvailableTagIndex]["id"]);
 
                                                             $stmtTag->execute();
 
                                                             // Tag found
-                                                            $wantedTag = "";
+                                                            $wantedTags[$wantedTagIndex] = "";
                                                         }
                                                     }
                                                 }
@@ -195,18 +226,19 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
     
                                             $wantedTags = explode(",", $_POST["tags"]);
                                            
-                                            foreach($availableTags as $currentTag){
-                                                foreach($wantedTags as &$wantedTag){ // Reference to modify it
-                                                    if(strtoupper($currentTag["tag"]) == strtoupper($wantedTag)){
+                                            // Add new found tags
+                                            foreach($availableTags as $CurrentAvailableTagIndex => $CurrentAvailableTagValue){
+                                                foreach($wantedTags as $wantedTagIndex => $wantedTagValue){
+                                                    if(strtoupper($availableTags[$CurrentAvailableTagIndex]["tag"]) == strtoupper($wantedTagValue)){
                                                         $stmtTag = $conn->prepare("INSERT INTO pictureTags (pictureId, tagId) VALUES (:pictureId, :tagId)");
 
                                                         $stmtTag->bindParam(":pictureId", $postId);
-                                                        $stmtTag->bindParam(":tagId", $currentTag["id"]);
+                                                        $stmtTag->bindParam(":tagId", $availableTags[$CurrentAvailableTagIndex]["id"]);
 
                                                         $stmtTag->execute();
 
                                                         // Tag found
-                                                        $wantedTag = "";
+                                                        $wantedTags[$wantedTagIndex] = "";
                                                     }
                                                 }
                                             }
@@ -295,33 +327,63 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 $wantedTags = explode(",", $_POST["tags"]);
 
                                 // Get current tags
-                                $stmtCurrentTags = $conn->prepare("SELECT tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
+                                $stmtCurrentTags = $conn->prepare("SELECT tags.id as id,tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
                                 $stmtCurrentTags->bindParam(":pictureId", $_POST["pictureId"]);
                                 // Execute
                                 $stmtCurrentTags->execute();
                                 // Get data from query
                                 $CurrentTags = $stmtCurrentTags->fetchAll(PDO::FETCH_ASSOC);
+
+                                // Determine tags to add
                                 
-                                foreach($CurrentTags as $tmpTag){
-                                    foreach($wantedTags as &$updateTag){ // Reference to modify it
-                                        if(strtoupper($tmpTag["tag"]) == strtoupper($updateTag)){
-                                            $updateTag = "";
+                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){                                  
+                                        if(strtoupper($CurrentTags[$CurrentTagindex]["tag"]) == strtoupper($wantedTagValue)){
+                                            $wantedTags[$wantedTagIndex] = "";
+                                            $CurrentTags[$CurrentTagindex]["tag"] = "";
                                         }
                                     }
                                 }
-                                
-                                foreach($availableTags as $currentTag){
-                                    foreach($wantedTags as &$wantedTag){ // Reference to modify it
-                                        if(strtoupper($currentTag["tag"]) == strtoupper($wantedTag)){
+
+                                // Remove old tags
+                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                    if($CurrentTags[$CurrentTagindex]["tag"] !== ""){
+                                        $stmtTag = $conn->prepare("DELETE FROM pictureTags WHERE pictureId = :pictureId AND tagId = :tagId");
+
+                                        $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
+                                        $stmtTag->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+
+                                        $stmtTag->execute();
+
+                                        // Delete tag from database if no other post uses it
+                                        $stmtTags = $conn->prepare("SELECT count(*) FROM pictureTags WHERE tagId = :tagId");
+                                        $stmtTags->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                        $stmtTags->execute();
+            
+                                        if($stmtTags->fetchColumn() === 0){
+                                            // Delete tag
+                                            $stmtTagDelete = $conn->prepare("DELETE FROM tags WHERE id = :tagId");
+            
+                                            // Bind params
+                                            $stmtTagDelete->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                            $stmtTagDelete->execute();
+                                        }
+                                    }
+                                }
+
+                                // Add new found tags
+                                foreach($availableTags as $CurrentAvailableTagIndex => $CurrentAvailableTagValue){
+                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){
+                                        if(strtoupper($availableTags[$CurrentAvailableTagIndex]["tag"]) == strtoupper($wantedTagValue)){
                                             $stmtTag = $conn->prepare("INSERT INTO pictureTags (pictureId, tagId) VALUES (:pictureId, :tagId)");
 
                                             $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
-                                            $stmtTag->bindParam(":tagId", $currentTag["id"]);
+                                            $stmtTag->bindParam(":tagId", $availableTags[$CurrentAvailableTagIndex]["id"]);
 
                                             $stmtTag->execute();
 
                                             // Tag found
-                                            $wantedTag = "";
+                                            $wantedTags[$wantedTagIndex] = "";
                                         }
                                     }
                                 }
@@ -411,33 +473,63 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 $wantedTags = explode(",", $_POST["tags"]);
 
                                 // Get current tags
-                                $stmtCurrentTags = $conn->prepare("SELECT tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
+                                $stmtCurrentTags = $conn->prepare("SELECT tags.id as id,tag FROM pictureTags INNER JOIN tags ON pictureTags.tagId = tags.id WHERE pictureId = :pictureId");
                                 $stmtCurrentTags->bindParam(":pictureId", $_POST["pictureId"]);
                                 // Execute
                                 $stmtCurrentTags->execute();
                                 // Get data from query
                                 $CurrentTags = $stmtCurrentTags->fetchAll(PDO::FETCH_ASSOC);
+
+                                // Determine tags to add
                                 
-                                foreach($CurrentTags as $tmpTag){
-                                    foreach($wantedTags as &$updateTag){ // Reference to modify it
-                                        if(strtoupper($tmpTag["tag"]) == strtoupper($updateTag)){
-                                            $updateTag = "";
+                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){                                  
+                                        if(strtoupper($CurrentTags[$CurrentTagindex]["tag"]) == strtoupper($wantedTagValue)){
+                                            $wantedTags[$wantedTagIndex] = "";
+                                            $CurrentTags[$CurrentTagindex]["tag"] = "";
                                         }
                                     }
                                 }
-                                
-                                foreach($availableTags as $currentTag){
-                                    foreach($wantedTags as &$wantedTag){ // Reference to modify it
-                                        if(strtoupper($currentTag["tag"]) == strtoupper($wantedTag)){
+
+                                // Remove old tags
+                                foreach($CurrentTags as $CurrentTagindex => $CurrentTagValue){
+                                    if($CurrentTags[$CurrentTagindex]["tag"] !== ""){
+                                        $stmtTag = $conn->prepare("DELETE FROM pictureTags WHERE pictureId = :pictureId AND tagId = :tagId");
+
+                                        $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
+                                        $stmtTag->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+
+                                        $stmtTag->execute();
+
+                                        // Delete tag from database if no other post uses it
+                                        $stmtTags = $conn->prepare("SELECT count(*) FROM pictureTags WHERE tagId = :tagId");
+                                        $stmtTags->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                        $stmtTags->execute();
+            
+                                        if($stmtTags->fetchColumn() === 0){
+                                            // Delete tag
+                                            $stmtTagDelete = $conn->prepare("DELETE FROM tags WHERE id = :tagId");
+            
+                                            // Bind params
+                                            $stmtTagDelete->bindParam(":tagId", $CurrentTags[$CurrentTagindex]["id"]);
+                                            $stmtTagDelete->execute();
+                                        }
+                                    }
+                                }
+
+                                // Add new found tags
+                                foreach($availableTags as $CurrentAvailableTagIndex => $CurrentAvailableTagValue){
+                                    foreach($wantedTags as $wantedTagIndex => $wantedTagValue){
+                                        if(strtoupper($availableTags[$CurrentAvailableTagIndex]["tag"]) == strtoupper($wantedTagValue)){
                                             $stmtTag = $conn->prepare("INSERT INTO pictureTags (pictureId, tagId) VALUES (:pictureId, :tagId)");
 
                                             $stmtTag->bindParam(":pictureId", $_POST["pictureId"]);
-                                            $stmtTag->bindParam(":tagId", $currentTag["id"]);
+                                            $stmtTag->bindParam(":tagId", $availableTags[$CurrentAvailableTagIndex]["id"]);
 
                                             $stmtTag->execute();
 
                                             // Tag found
-                                            $wantedTag = "";
+                                            $wantedTags[$wantedTagIndex] = "";
                                         }
                                     }
                                 }
@@ -503,18 +595,19 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
 
                             $wantedTags = explode(",", $_POST["tags"]);
                             
-                            foreach($availableTags as $currentTag){
-                                foreach($wantedTags as &$wantedTag){ // Reference to modify it
-                                    if(strtoupper($currentTag["tag"]) == strtoupper($wantedTag)){
+                            // Add new found tags
+                            foreach($availableTags as $CurrentAvailableTagIndex => $CurrentAvailableTagValue){
+                                foreach($wantedTags as $wantedTagIndex => $wantedTagValue){
+                                    if(strtoupper($availableTags[$CurrentAvailableTagIndex]["tag"]) == strtoupper($wantedTagValue)){
                                         $stmtTag = $conn->prepare("INSERT INTO pictureTags (pictureId, tagId) VALUES (:pictureId, :tagId)");
 
                                         $stmtTag->bindParam(":pictureId", $postId);
-                                        $stmtTag->bindParam(":tagId", $currentTag["id"]);
+                                        $stmtTag->bindParam(":tagId", $availableTags[$CurrentAvailableTagIndex]["id"]);
 
                                         $stmtTag->execute();
 
                                         // Tag found
-                                        $wantedTag = "";
+                                        $wantedTags[$wantedTagIndex] = "";
                                     }
                                 }
                             }
