@@ -35,7 +35,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                             $check = getimagesize($_FILES["file"]["tmp_name"]);
 
                             // File appears to be an image and valid extension
-                            if($check !== false && ($FileExtension === "jpeg" || $FileExtension === "png") ){
+                            if($check !== false && ($FileExtension === "jpeg" || $FileExtension === "png" || $FileExtension === "jpg") ){
                                 $RandomID = bin2hex(random_bytes(32));  //TODO: Check for duplicates
                                 $FileName = "$uploadDir/$RandomID.$FileExtension";
 

@@ -5,7 +5,7 @@ header("Access-Control-Allow-Headers: content-type");
 header("Access-Control-Allow-Credentials: true");
 
 if($_SERVER["REQUEST_METHOD"] === "GET"){
-    $postsLimit = 16;
+    $postsLimit = 18;
 
     session_start();
     // Set content type header
@@ -135,11 +135,31 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 echo json_encode($response);
             }
         }
+        else if(isset($_GET["action"]) && !is_array($_GET["action"]) && $_GET["action"] == "followingPosts"){
+            try{
+                $stmt = $conn->prepare("SELECT id,title,description,isExternal,URL,DATE_FORMAT(createdAt, '%d/%m/%Y') as createdAt FROM pictures WHERE ownerId IN (SELECT followedUser FROM usersFollowers WHERE followerId = :userId) AND visibility = 1 LIMIT :limit");
+        
+                // Bind params
+                $stmt->bindParam(":userId", $_SESSION["userId"]);
+                $stmt->bindParam(":limit", $postsLimit);
+
+                // Execute
+                $stmt->execute();
+                $pictureData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $response["data"] = $pictureData;
+                $response["status"] = 200;
+                echo json_encode($response);
+            }catch(PDOException $e){
+                $response["status"] = 500;
+                echo json_encode($response);
+            }
+        }
     }
     else{
         // Anonymous request
         try{
-            $stmt = $conn->prepare("SELECT id,title,description,isExternal,URL,DATE_FORMAT(createdAt, '%d/%m/%Y') as createdAt FROM pictures WHERE visibility = 1 LIMIT :limit");
+            $stmt = $conn->prepare("SELECT id,title,description,isExternal,URL,DATE_FORMAT(createdAt, '%d/%m/%Y') as createdAt FROM pictures WHERE visibility = 1 ORDER BY id DESC LIMIT :limit");
     
             // Bind params
             $stmt->bindParam(":limit", $postsLimit);
