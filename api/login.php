@@ -62,7 +62,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 $followers = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
                                 // Return votes
-                                $stmt = $conn->prepare("SELECT pictureId as id FROM pictureVotes WHERE ownerId=:userId");
+                                $stmt = $conn->prepare("SELECT pictureId as id,isPositive FROM pictureVotes WHERE ownerId=:userId");
 
                                 // Bind params
                                 $stmt->bindParam(":userId", $userData["id"]);
@@ -70,7 +70,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 // Execute
                                 $stmt->execute();
                                 // Get data from query
-                                $pictureVotes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                                $pictureVotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                                 $user["followedUsers"] = $followers;
                                 $user["pictureVotes"] = $pictureVotes;
