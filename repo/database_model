@@ -25,6 +25,7 @@ Table pictureVotes {
   pictureId int [not null]
   ownerId int [not null]
   createdAt timestamp [not null]
+  isPositive boolean [not null]
   Indexes {
     (ownerId, pictureId) [unique]
   }

@@ -23,6 +23,7 @@ CREATE TABLE `pictureVotes` (
   `id` int PRIMARY KEY AUTO_INCREMENT,
   `pictureId` int NOT NULL,
   `ownerId` int NOT NULL,
+  `isPositive` boolean NOT NULL,
   `createdAt` timestamp NOT NULL
 );
 
