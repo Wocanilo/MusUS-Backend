@@ -42,6 +42,17 @@ if(isset($_SESSION["userId"]) && $_SESSION["userId"] != "" ){
         // Retrieve comments
         if(isset($_GET["pictureId"]) && $_GET["pictureId"] !== "" && !is_array($_GET["pictureId"])){
             try{
+                // Check if post is public
+                $stmt = $conn->prepare("SELECT ownerId,visibility FROM pictures WHERE id = :pictureId");
+                $stmt->bindParam(":pictureId", $_GET["pictureId"]);
+                $stmt->execute();
+                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if($results["visibility"] == 0 && $results["userId"] != $_SESSION["userId"]){ // If post is private and user not owner don't show comments
+                    $response["status"] = 503; // Forbbiden
+                    die(json_encode($response));
+                }
+
                 $stmt = $conn->prepare("SELECT users.id as userId,pictureComments.id as commentId,username,comment FROM pictureComments INNER JOIN users ON pictureComments.ownerId = users.id WHERE pictureComments.pictureId = :pictureId");
         
                 // Bind params

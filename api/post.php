@@ -7,6 +7,8 @@ header("Access-Control-Allow-Methods: GET, POST, DELETE");
 
 // User must be logged in
 session_start();
+$badWords = array("badword1", "badword2");
+$maxPostsPerUser = 50;
 
 if(!isset($_SESSION["userId"])){
     die();
@@ -21,7 +23,39 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
     // Checks required parameters
     if(isset($_POST["title"]) && isset($_POST["description"]) && isset($_POST["tags"]) && isset($_POST["visibility"])){
         // Check data is not empty
-        if($_POST["title"] != "" && $_POST["description"] != "" && $_POST["tags"] != "" && $_POST["visibility"] != ""){
+        if($_POST["title"] != "" && $_POST["description"] != "" && $_POST["visibility"] != ""){
+            // Check no badwords, we check by word
+            $checkWords = explode(" ",$_POST["title"]);
+            
+            // Check title
+            foreach($checkWords as $WordIndex => $WordValue){
+                if(in_array($WordValue, $badWords)){
+                    $response["status"] = 601; // Bad words
+                    die(json_encode($response));
+                }
+            }
+
+            $checkWords = explode(" ",$_POST["description"]);
+            
+            // Check description
+            foreach($checkWords as $WordIndex => $WordValue){
+                if(in_array($WordValue, $badWords)){
+                    $response["status"] = 601; // Bad words
+                    die(json_encode($response));
+                }
+            }
+
+
+            $checkWords = explode(",",$_POST["tags"]);
+            
+            // Check tags
+            foreach($checkWords as $WordIndex => $WordValue){
+                if(in_array($WordValue, $badWords)){
+                    $response["status"] = 601; // Bad words
+                    die(json_encode($response));
+                }
+            }
+
             // Check not arrays
             if(!is_array($_POST["title"]) && !is_array($_POST["description"]) && !is_array($_POST["tags"]) && !is_array($_POST["visibility"])){
                 // Decide type of post
@@ -197,6 +231,17 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                         // New post
                                         try{
                                             $conn->beginTransaction(); // Begin transaction
+
+                                            // Enforce posts limit per user
+                                            $stmt = $conn->prepare("SELECT count(*) FROM pictures WHERE ownerId = :userId");
+                                            $stmt->bindParam(":userId", $_SESSION["userId"]);
+
+                                            $stmt->execute();
+                                            if($stmt->fetchColumn() >= $maxPostsPerUser){
+                                                $response["status"] = 602; // Posts limit reached
+                                                die(json_encode($response));
+                                            }
+
                                             $stmt = $conn->prepare("INSERT INTO pictures (ownerId, title, description, isExternal, URL, visibility) VALUES (:ownerId, :title, :description, :isExternal, :URL, :visibility)");
                             
                                             // Bind params
@@ -565,6 +610,17 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 echo json_encode($response);
                             }
                         }else{
+
+                            // Enforce posts limit per user
+                            $stmt = $conn->prepare("SELECT count(*) FROM pictures WHERE ownerId = :userId");
+                            $stmt->bindParam(":userId", $_SESSION["userId"]);
+
+                            $stmt->execute();
+                            if($stmt->fetchColumn() >= $maxPostsPerUser){
+                                $response["status"] = 602; // Posts limit reached
+                                die(json_encode($response));
+                            }
+
                             $stmt = $conn->prepare("INSERT INTO pictures (ownerId, title, description, isExternal, URL, visibility) VALUES (:ownerId, :title, :description, :isExternal, :URL, :visibility)");
                     
                             // Bind params
@@ -640,7 +696,6 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                         }
                     }catch(PDOException $e){
                         $response["status"] = 500;
-                        echo $e->getMessage();
                         $conn->rollback();
                         echo json_encode($response);
                     }

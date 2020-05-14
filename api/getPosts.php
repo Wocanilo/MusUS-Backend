@@ -219,7 +219,6 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 $searchTerm = "%".$_GET["search"]."%";
                 $stmt->bindParam(":search", $searchTerm);
 
-
                 // Execute
                 $stmt->execute();
                 $pictureData = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -229,6 +228,31 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 }else{
                     $response["status"] = 200;
                     $response["data"] = $pictureData;
+                }
+
+
+                echo json_encode($response);
+            }catch(PDOException $e){
+                $response["status"] = 500;
+                echo json_encode($response);
+            }
+        } 
+         else if(isset($_GET["action"]) && !is_array($_GET["action"]) && $_GET["action"] == "trendingUsers"){
+            try{
+                $stmt = $conn->prepare("SELECT DISTINCT firstname,surname,users.id,username,email FROM users INNER JOIN (SELECT usersVotes.ownerId,((usersVotes.totalPositives + 1.9208) / (usersVotes.totalPositives + usersVotes.totalNegatives) -1.96 * SQRT((usersVotes.totalPositives * usersVotes.totalNegatives) / (usersVotes.totalPositives + usersVotes.totalNegatives) + 0.9604) /(usersVotes.totalPositives + usersVotes.totalNegatives)) / (1 + 3.8416 / (usersVotes.totalPositives + usersVotes.totalNegatives)) AS ci_lower_bound FROM (SELECT totalVotesPerUser.ownerId,totalVotesPerUser.totalPositives,totalVotesPerUser.totalNegatives FROM (SELECT ownerId,sum(data.positive) as totalPositives,sum(data.negative) as totalNegatives FROM (SELECT votes.pictureId,(votes.totalEntries - votes.positive) as negative,votes.positive as positive FROM (SELECT pictureId,count(*) as totalEntries,sum(isPositive) as positive FROM pictureVotes GROUP BY pictureId) as votes) as data INNER JOIN pictures ON pictureId = pictures.id WHERE data.positive + data.negative > 0 GROUP BY ownerId) as totalVotesPerUser) as usersVotes) UsersPuntuation ORDER BY ci_lower_bound DESC LIMIT :limit");
+        
+                // Bind params
+                $stmt->bindParam(":limit", $postsLimit);
+
+                // Execute
+                $stmt->execute();
+                $usersData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if($usersData === false){
+                    $response["status"] = 500;
+                }else{
+                    $response["status"] = 200;
+                    $response["data"] = $usersData;
                 }
 
 
