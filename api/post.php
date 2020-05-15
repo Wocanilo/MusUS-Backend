@@ -1,6 +1,10 @@
 <?php
 require_once "db.php";
-header("Access-Control-Allow-Origin: http://localhost:8082");
+if($_SERVER['HTTP_ORIGIN'] == "https://musus.wocat.xyz"){
+        header("Access-Control-Allow-Origin: https://musus.wocat.xyz");
+}else if($_SERVER['HTTP_ORIGIN'] == "http://localhost:8082"){
+        header("Access-Control-Allow-Origin: http://localhost:8082");
+}
 header("Access-Control-Allow-Headers: content-type");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, DELETE");
