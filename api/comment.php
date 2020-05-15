@@ -52,7 +52,6 @@ if(isset($_SESSION["userId"]) && $_SESSION["userId"] != "" ){
                 $stmt->execute();
                 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                var_dump($results);
                 if($results["visibility"] === 0 && $results["userId"] != $_SESSION["userId"]){ // If post is private and user not owner don't show comments
                     $response["status"] = 503; // Forbbiden
                     die(json_encode($response));

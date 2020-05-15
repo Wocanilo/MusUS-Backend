@@ -84,7 +84,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                         // Verify ownership of the post
                                         try{
                                             $conn->beginTransaction(); // Begin transaction
-                                            $stmt = $conn->prepare("SELECT ownerId,URL,isExternal FROM pictures WHERE id = :pictureId");
+                                            $stmt = $conn->prepare("SELECT ownerId,URL,isExternal,visibility FROM pictures WHERE id = :pictureId");
 
                                             // Bind params
                                             $stmt->bindParam(":pictureId", $_POST["pictureId"]);
@@ -111,6 +111,22 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                                 if($_POST["visibility"] === "Public"){
                                                     $isPublic = 1;
                                                 }
+
+                                                if($resultsOwnerShip["visibility"] == 1 && $isPublic == 0){
+                                                    // Check if post has comments
+                                                    $stmtComments = $conn->prepare("SELECT count(*) FROM pictureComments WHERE pictureId = :pictureId");
+
+                                                    $stmtComments->bindParam(":pictureId", $_POST["pictureId"]);
+                                                    $stmtComments->execute();
+
+                                                    if($stmtComments->fetchColumn() !== 0){
+                                                        $response["status"] = 604; // Cant change post visibility with comments
+                                                        die(json_encode($response));
+                                                    }
+
+
+                                                }
+
                                                 $stmt->bindParam(":visibility", $isPublic);
                                                 
                                                 // Execute
@@ -338,7 +354,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                         // Verify ownership of the post
                         try{
                             $conn->beginTransaction(); // Begin transaction
-                            $stmt = $conn->prepare("SELECT ownerId FROM pictures WHERE id = :pictureId");
+                            $stmt = $conn->prepare("SELECT ownerId,visibility FROM pictures WHERE id = :pictureId");
 
                             // Bind params
                             $stmt->bindParam(":pictureId", $_POST["pictureId"]);
@@ -361,6 +377,22 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 if($_POST["visibility"] === "Public"){
                                     $isPublic = 1;
                                 }
+
+                                if($resultsOwnerShip["visibility"] == 1 && $isPublic == 0){
+                                    // Check if post has comments
+                                    $stmtComments = $conn->prepare("SELECT count(*) FROM pictureComments WHERE pictureId = :pictureId");
+
+                                    $stmtComments->bindParam(":pictureId", $_POST["pictureId"]);
+                                    $stmtComments->execute();
+
+                                    if($stmtComments->fetchColumn() !== 0){
+                                        $response["status"] = 604; // Cant change post visibility with comments
+                                        die(json_encode($response));
+                                    }
+
+
+                                }
+
                                 $stmt->bindParam(":visibility", $isPublic);
                                 
                                 // Execute
@@ -483,7 +515,7 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                         // Maybe we are updating
                         if(isset($_POST["pictureId"]) && $_POST["pictureId"] !== "" && !is_array($_POST["pictureId"])){
                             // Verify ownership of the post
-                            $stmt = $conn->prepare("SELECT ownerId FROM pictures WHERE id = :pictureId");
+                            $stmt = $conn->prepare("SELECT ownerId,visibility FROM pictures WHERE id = :pictureId");
 
                             // Bind params
                             $stmt->bindParam(":pictureId", $_POST["pictureId"]);
@@ -507,6 +539,22 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                                 if($_POST["visibility"] === "Public"){
                                     $isPublic = 1;
                                 }
+
+                                if($results["visibility"] == 1 && $isPublic == 0){
+                                    // Check if post has comments
+                                    $stmtComments = $conn->prepare("SELECT count(*) FROM pictureComments WHERE pictureId = :pictureId");
+
+                                    $stmtComments->bindParam(":pictureId", $_POST["pictureId"]);
+                                    $stmtComments->execute();
+
+                                    if($stmtComments->fetchColumn() !== 0){
+                                        $response["status"] = 604; // Cant change post visibility with comments
+                                        die(json_encode($response));
+                                    }
+
+
+                                }
+
                                 $stmt->bindParam(":visibility", $isPublic);
         
                                 // Execute

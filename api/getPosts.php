@@ -113,6 +113,7 @@ if($_SERVER["REQUEST_METHOD"] === "GET"){
                 if($results["visibility"] == 0){
                     if($_SESSION["userId"] == $results["userId"]){
                         $response["data"] = $results;
+                        $response["data"]["tags"] = $pictureTags;
                     }else{
                         $response["status"] = 403; // Forbidden
                     }
