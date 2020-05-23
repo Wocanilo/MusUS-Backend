@@ -5,6 +5,7 @@ CREATE TABLE `users` (
   `firstName` varchar(255) NOT NULL,
   `surname` varchar(255) NOT NULL,
   `email` varchar(255) UNIQUE,
+  `phone` varchar(255) NOT NULL,
   `createdAt` timestamp NOT NULL
 );
 

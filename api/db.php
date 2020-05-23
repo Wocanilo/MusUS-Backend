@@ -1,8 +1,8 @@
 <?php
 // docker-php-ext-install pdo pdo_mysql
-$dsn = 'mysql:dbname=musus;host=127.0.0.1';
-$user = 'dbuser';
-$password = 'dbpass';
+$dsn = 'mysql:dbname='.getenv("MUSUS_DB_NAME").';host='.getenv("MUSUS_DB_HOST");
+$user = getenv("MUSUS_DB_USER");
+$password = getenv("MUSUS_DB_PASSWORD");
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
