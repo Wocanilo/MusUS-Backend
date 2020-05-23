@@ -12,11 +12,11 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
     // JSON DECODE
     $rawBody = file_get_contents('php://input');
     $postData = json_decode($rawBody);
-    if(isset($postData->username) && isset($postData->password) && isset($postData->repeatPassword) && isset($postData->firstName) && isset($postData->surname) && isset($postData->email)){
+    if(isset($postData->username) && isset($postData->password) && isset($postData->repeatPassword) && isset($postData->firstName) && isset($postData->surname) && isset($postData->email) && isset($postData->phone)){
         // Check data is not empty
-        if($postData->username !== "" && $postData->password !== "" && $postData->repeatPassword !== "" && $postData->firstName !== "" && $postData->surname !== "" && $postData->email !== ""){
+        if($postData->username !== "" && $postData->password !== "" && $postData->repeatPassword !== "" && $postData->firstName !== "" && $postData->surname !== "" && $postData->email !== "" && $postData->phone !== ""){
             // Check not arrays
-            if(!is_array($postData->username) && !is_array($postData->password) && !is_array($postData->repeatPassword) && !is_array($postData->firstName) && !is_array($postData->surname) && !is_array($postData->email)){
+            if(!is_array($postData->username) && !is_array($postData->password) && !is_array($postData->repeatPassword) && !is_array($postData->firstName) && !is_array($postData->surname) && !is_array($postData->email) && !is_array($postData->phone)){
                 $response = [];
                 // Check passwords and email valid
                 if($postData->password === $postData->repeatPassword && filter_var($postData->email, FILTER_VALIDATE_EMAIL)){
@@ -24,13 +24,14 @@ if($_SERVER["REQUEST_METHOD"] === "POST"){
                     header('Content-Type: application/json');
                     try{
                         // The DB checks for duplicates usernames/emails
-                        $stmt = $conn->prepare("INSERT INTO users (firstName, surname, username, password, email) VALUES (:firstName, :surname, :username, :password, :email)");
+                        $stmt = $conn->prepare("INSERT INTO users (firstName, surname, username, password, email, phone) VALUES (:firstName, :surname, :username, :password, :email, :phone)");
         
                         // Bind params
                         $stmt->bindParam(":firstName", $postData->firstName);
                         $stmt->bindParam(":surname", $postData->surname);
                         $stmt->bindParam(":username", $postData->username);
                         $stmt->bindParam(":email", $postData->email);
+                        $stmt->bindParam(":phone", $postData->phone);
                         // Saved hashed password, by default BCRYPT
                         $stmt->bindParam(":password", password_hash($postData->password, PASSWORD_BCRYPT));
     
